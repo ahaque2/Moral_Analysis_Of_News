@@ -1,3 +1,3 @@
-# Moral Analysis Of News Using Subspace Vector Projections
+# Moral Analysis Of News Using Vector Subspace Projections
 
 
