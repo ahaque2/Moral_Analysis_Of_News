@@ -1,4 +1,4 @@
-# Moral Analysis Of News Using Vector Subspace Projections
+# Analyzing Moral Framing in War News Using A Vector Subspace Projection Approach
 
 ## Running the code
 
