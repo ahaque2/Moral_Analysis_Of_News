@@ -1,3 +1,7 @@
+### Code to identify the moral foundation vector subspaces. 
+### The best params for emfd are included. Change to experiment with other params.
+### The identified subspace is saved under the folder subspace.
+
 import pandas as pd
 import numpy as np
 import sys
@@ -14,9 +18,9 @@ import argparse
 
 # Setup argument parser
 parser = argparse.ArgumentParser()
-parser.add_argument('--high', type=int, default=-1,  help='Count of virtue words')
-parser.add_argument('--low', type=int, default=-1, help='Count of vice words')
-parser.add_argument('--num_keep', type=int, default=-1, help='Count of words pairs to keep')
+parser.add_argument('--high', type=int, default=200,  help='Count of virtue words')
+parser.add_argument('--low', type=int, default=200, help='Count of vice words')
+parser.add_argument('--num_keep', type=int, default=200, help='Count of words pairs to keep')
 parser.add_argument('--moral_foundation', type=str, default='care', help='Moral Foundation')
 parser.add_argument('--subspace_dim', type=int, default=1, help='Subspace Dimensions (set to 1 to get moral foundation scores or higher to get moral foundation embeddings with dim dimension)')
 
@@ -65,7 +69,7 @@ def get_sub(high, low, k, moral_foundation, dim):
     
 
 
-emfd_df = pd.read_csv('../data/eMFD_wordlist.csv')
+emfd_df = pd.read_csv('data/eMFD_wordlist.csv')
 
 model_name = 'bert-base-cased'
 model = AutoModel.from_pretrained(model_name, output_hidden_states = True, output_attentions = True)
@@ -100,5 +104,6 @@ if high == -1 or low == -1 or k == -1:
 subspace, _ = get_sub(high, low, k, moral_foundation + '_sent', dim)
 
 np.save(f'subspace/{moral_foundation}.npy', subspace)
+# print(subspace.shape)
 
 print(f'Successfully Identified the Subspace for {moral_foundation}. \nSaved it under subspace/')

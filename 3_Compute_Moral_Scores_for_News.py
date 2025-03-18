@@ -1,19 +1,23 @@
+### This code computes moral foundation scores for news headlines stored in 'data' folder in the GazaNews csv
+
 import pandas as pd
 import numpy as np
 import sys
-from scipy.stats import pearsonr
 
+from transformers import AutoModel, AutoTokenizer
 import torch
-from transformers import AdamW, AutoModel, AutoTokenizer
 
-from sklearn.decomposition import PCA
-from Word_Pairs import Word_Pairs
+
 import argparse
 
+# Setup argument parser
 parser = argparse.ArgumentParser()
 parser.add_argument('--moral_foundation', type=str, default='care', help='Moral Foundation')
-
 args = parser.parse_args()
+
+moral_foundation = args.moral_foundation
+df = pd.read_csv('data/GazaNews.csv')
+
 
 def get_word_embeddings(wordlist):
 
@@ -37,20 +41,12 @@ def get_word_embeddings(wordlist):
          
     return np.array(embeddings)
 
-
-def get_subspace(high, low, k, attr, dim):
-
-    word_pairs = WordPairs.get_word_pairs_with_scores(high, low, k, attr)
-
-    w1_emb = get_word_embeddings(word_pairs.Word1.tolist())
-    w2_emb = get_word_embeddings(word_pairs.Word2.tolist())
-
-    subspace_1, subspace_dim = WordPairs.get_subspace(w1_emb, w2_emb, dim)
+def normalize(data):
     
-    return subspace_1, subspace_dim
+    min_val, max_val = min(data), max(data)
+    normalized = [(2 * (x - min_val) / (max_val - min_val)) - 1 for x in data]
+    return normalized
 
-
-emfd_df = pd.read_csv('../data/eMFD_wordlist.csv')
 
 model_name = 'bert-base-cased'
 model = AutoModel.from_pretrained(model_name, output_hidden_states = True, output_attentions = True)
@@ -61,21 +57,14 @@ model.to(device)
 # ModernBertModel
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-all_words = emfd_df.word.tolist()
+subspace = np.load(f'subspace/{moral_foundation}.npy')
+emb = get_word_embeddings(df.headline.tolist())
 
-emb = get_word_embeddings(all_words)
+## Multiple the subspace with -1 if you get a negative Pearson correlation in 2_Model_Evaluation.py
+score = np.dot(emb, subspace)
 
-moral_foundation = args.moral_foundation
-try:
-    subspace = np.load(f'subspace/{moral_foundation}.npy')
-    
-except Exception as e:
-    print('Subspace not found under the subspace directory. First run 1_identify_moral_subspace.py to create the subspace.')
-    sys.exit(0)
+score_norm = normalize(score)
+df[moral_foundation] = score_norm
 
-scores = np.dot(emb, subspace)
-
-true_scores = emfd_df[f'{moral_foundation}_sent'].tolist()
-
-corr, _ = pearsonr(scores, true_scores)
-print('Pearson Correlation ', corr)
+df.to_csv('results/GazaNews_with_moral_scores.csv')
+print('Save the results to results/GazaNews_with_moral_scores.csv')
